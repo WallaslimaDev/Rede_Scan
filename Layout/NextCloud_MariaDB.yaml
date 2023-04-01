@@ -1,0 +1,65 @@
+version: '3'
+
+services:
+  db:
+    image: mariadb
+    restart: unless-stopped
+    container_name: mariadb
+    command: --transaction-isolation=READ-COMMITTED --binlog-format=ROW
+    volumes:
+      - db:/var/lib/mysql
+    environment:
+      TZ: "Brazil"
+      MYSQL_ROOT_PASSWORD: "SENHA_SENHA" # Defina sua senha
+      MYSQL_PASSWORD: "SENHA_SENHA"      # Defina sua senha
+      MYSQL_DATABASE: "nextcloud"        # Defina o nome do banco de dados
+      MYSQL_USER: "thalles"              # Defina o usuario para o banco
+
+  nextcloud:
+    image: lscr.io/linuxserver/nextcloud:latest
+    container_name: nextcloud
+    environment:
+      MYSQL_PASSWORD: "SENHA_SENHA"      # Defina sua senha
+      MYSQL_DATABASE: "nextcloud"        # Defina o nome do banco de dados
+      MYSQL_USER: "thalles"              # Defina o usuario para o banco
+      MYSQL_HOST: "db"
+      TZ: "America/Fortaleza"
+    volumes:
+      - pnextcconfig:/config
+      - pnextcdata:/data
+    ports:
+      - "443:443"
+    depends_on:
+      - db
+    restart: unless-stopped
+
+  app2:
+    image: jc21/nginx-proxy-manager:latest
+    restart: unless-stopped
+    container_name: nginxproxy
+    ports:
+      - "80:80" # Public HTTP Port
+      - "81:81" # Admin Web Port
+    environment:
+      TZ: "Brazil"
+      DB_MYSQL_HOST: "db"
+      DB_MYSQL_PORT: "3306"
+      DB_MYSQL_USER: "thalles"            # Defina o usuario para o banco
+      DB_MYSQL_PASSWORD: "SENHA_SENHA"    # Defina sua senha
+      DB_MYSQL_NAME: "nginx"
+    volumes:
+      - nginxdata:/data
+      - nginxletsencrypt:/etc/letsencrypt
+    depends_on:
+      - db
+    links:
+      - db
+
+volumes:
+  pnextcconfig:
+  pnextcdata:
+  eadnextcconfig:
+  eadnextcdata:
+  db:
+  nginxdata:
+  nginxletsencrypt:
